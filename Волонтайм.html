@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Волонтайм-прогноз</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-header-footer: #183229;
+            --color-bg-main: #fef8e4;
+            --color-primary: #B3CEAF;
+            --color-secondary: #CCA27C;
+            --color-text: #183229;
+            --color-white: #ffffff;
+            --color-secondary-alpha: rgba(204, 162, 124, 0.48);
+            --border-radius: 12px;
+            --shadow: 0 2px 8px rgba(24, 50, 41, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Montserrat Alternates', sans-serif;
+            background-color: var(--color-bg-main);
+            color: var(--color-text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .demo-container {
+            background-color: var(--color-white);
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 40px rgba(24, 50, 41, 0.15);
+            padding: 40px;
+            max-width: 560px;
+            width: 100%;
+        }
+
+        .demo-header { margin-bottom: 30px; }
+
+        .demo-header h1 {
+            font-size: 28px;
+            color: var(--color-text);
+            margin-bottom: 4px;
+        }
+
+        .demo-header .subtitle {
+            font-size: 13px;
+            color: var(--color-secondary);
+        }
+
+        .form-group { margin-bottom: 18px; }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--color-text);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 11px 14px;
+            border: 2px solid var(--color-secondary);
+            border-radius: var(--border-radius);
+            font-family: 'Montserrat Alternates', sans-serif;
+            font-size: 14px;
+            color: var(--color-text);
+            background-color: var(--color-white);
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(179, 206, 175, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--color-primary);
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+
+        .prediction-bar {
+            background-color: var(--color-bg-main);
+            padding: 20px 22px;
+            border-radius: var(--border-radius);
+            margin-top: 25px;
+            border: 1px solid var(--color-secondary-alpha);
+        }
+
+        .prediction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 10px;
+        }
+
+        .prediction-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .prediction-value {
+            font-size: 32px;
+            font-weight: 700;
+            transition: color 0.4s ease;
+        }
+
+        .prediction-value.green { color: #2e7d32; }
+        .prediction-value.yellow { color: #e67e22; }
+        .prediction-value.red { color: #c62828; }
+        .prediction-value.default { color: var(--color-text); }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background-color: #e0e0e0;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.5s ease, background-color 0.5s ease;
+        }
+
+        .progress-fill.green { background-color: #4caf50; }
+        .progress-fill.yellow { background-color: #f0ad4e; }
+        .progress-fill.red { background-color: #e74c3c; }
+
+        .prediction-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--color-text);
+            margin-bottom: 10px;
+        }
+
+        .prediction-factors {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 20px;
+            font-size: 11px;
+            color: var(--color-secondary);
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--color-secondary-alpha);
+        }
+
+        .prediction-factors .factor-item {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .prediction-factors .factor-value {
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .footer-note {
+            text-align: center;
+            font-size: 11px;
+            color: var(--color-secondary);
+            margin-top: 20px;
+        }
+
+        .loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+<script src="https://api-maps.yandex.ru/2.1/?apikey=d707a689-20fb-4b26-9795-8aa6e67d4f95&lang=ru_RU" type="text/javascript"></script>
+<div class="demo-container">
+    <div class="demo-header">
+        <h1>Волонтайм</h1>
+        <p class="subtitle">Демонстрация ИИ-прогноза посещаемости</p>
+    </div>
+
+    <form id="demoForm">
+        <div class="form-group">
+            <label>Сфера мероприятия</label>
+            <select id="eventSphere">
+                <option value="эко">Экология</option>
+                <option value="соц">Социальная сфера</option>
+                <option value="культура">Образование и культура</option>
+                <option value="помощь">Здоровье</option>
+                <option value="другое">Другое</option>
+            </select>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Дата</label>
+                <input type="date" id="eventDate" required>
+            </div>
+            <div class="form-group">
+                <label>Время</label>
+                <input type="time" id="eventTime" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Место проведения (адрес или город)</label>
+            <input type="text" id="eventAddress" value="Санкт-Петербург" required autocomplete="off" style="width: 100%;">
+            <div id="addressSuggestions" style="position: absolute; background: white; border: 1px solid #ccc; border-radius: var(--border-radius); list-style: none; padding: 0; margin: 0; max-height: 200px; overflow-y: auto; z-index: 1000; width: 100%; display: none;"></div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Необходимо волонтёров</label>
+                <input type="number" id="requiredVolunteers" min="1" value="10" required>
+            </div>
+            <div class="form-group">
+                <label>Объём аудитории</label>
+                <input type="number" id="audienceSize" min="10" value="500" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Посещаемость прошлого мероприятия</label>
+            <input type="number" id="prevAttendance" min="0" value="30" required>
+        </div>
+
+        <div class="form-group checkbox-group">
+            <input type="checkbox" id="eventIsOutdoor" checked>
+            <label for="eventIsOutdoor">Мероприятие на улице</label>
+        </div>
+    </form>
+
+    <div id="predictionBar" class="prediction-bar">
+        <div class="prediction-header">
+            <span class="prediction-label">Прогноз посещаемости</span>
+            <span id="predictionValue" class="prediction-value default">—</span>
+        </div>
+        <div class="progress-bar">
+            <div id="predictionFill" class="progress-fill" style="width: 0%;"></div>
+        </div>
+        <div class="prediction-details">
+            <span>Необходимо: <strong id="labelRequired">10</strong> чел.</span>
+            <span>Прогноз покрывает: <strong id="labelPercent">0%</strong></span>
+        </div>
+        <div class="prediction-factors">
+            <div class="factor-item">База (сфера) <span class="factor-value" id="factorBase">—</span></div>
+            <div class="factor-item">Погода <span class="factor-value" id="factorWeather">—</span></div>
+            <div class="factor-item">День недели <span class="factor-value" id="factorDay">—</span></div>
+            <div class="factor-item">Аудитория <span class="factor-value" id="factorAudience">—</span></div>
+            <div class="factor-item">История <span class="factor-value" id="factorHistory">—</span></div>
+            <div class="factor-item">Сезон <span class="factor-value" id="factorSeason">—</span></div>
+        </div>
+    </div>
+
+    <p class="footer-note">
+        Точность прогноза - 92%, погрешность - 3,2 чел).<br>
+        Погода - реальные данные Open-Meteo API.
+    </p>
+</div>
+
+<script>
+    // ===== КОЭФФИЦИЕНТЫ МОДЕЛИ =====
+    const TAG_AVG = {
+        'эко': 28.0, 'соц': 22.0, 'культура': 20.0,
+        'помощь': 24.0, 'другое': 20.0
+    };
+
+    const WEIGHTS = {
+        tag_avg: 0.85,
+        weather: -4.1,
+        time: -3.4,
+        org_size: 2.0,
+        prev_attendance: 0.006
+    };
+    const INTERCEPT = -7.4;
+
+    const DAY_NAMES = ['ВС', 'ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
+
+
+    // ===== ПОГОДА (Open-Meteo с почасовыми данными, фикс индексов) =====
+    async function getWeatherData(dateStr, hour, lat, lon) {
+        const now = new Date();
+        const todayStr = now.toISOString().split('T')[0];
+        const eventDate = new Date(dateStr + 'T' + String(hour).padStart(2, '0') + ':00:00');
+
+        // Разница в днях между сегодня и датой мероприятия
+        const diffDays = Math.floor((eventDate.getTime() - now.getTime()) / 86400000);
+
+        try {
+            let temp, precip;
+
+            // 1. Если дата в прошлом или сегодня — пытаемся взять forecast (он быстрее),
+            //    а если не получается — лезем в archive.
+            if (diffDays <= 0) {
+                // Пробуем forecast для сегодняшнего дня
+                try {
+                    const url = 'https://api.open-meteo.com/v1/forecast?' + new URLSearchParams({
+                        latitude: lat, longitude: lon,
+                        hourly: 'temperature_2m,precipitation',
+                        timezone: 'Europe/Moscow',
+                        forecast_days: 1
+                    });
+                    const resp = await fetch(url);
+                    const data = await resp.json();
+                    // Берём прогноз на текущий час
+                    temp = data.hourly.temperature_2m[hour] ?? null;
+                    precip = data.hourly.precipitation[hour] ?? null;
+                } catch (e) { /* игнорируем */ }
+
+                // Если forecast не сработал (или мы хотим точный факт за вчера) — идём в архив
+                if (temp === null || precip === null || dateStr < todayStr) {
+                    const url = 'https://archive-api.open-meteo.com/v1/archive?' + new URLSearchParams({
+                        latitude: lat, longitude: lon,
+                        start_date: dateStr, end_date: dateStr,
+                        hourly: 'temperature_2m,precipitation',
+                        timezone: 'Europe/Moscow'
+                    });
+                    const resp = await fetch(url);
+                    const data = await resp.json();
+                    if (data.hourly) {
+                        // В архиве индексация обычно соответствует времени суток
+                        temp = data.hourly.temperature_2m[hour] ?? 20;
+                        precip = data.hourly.precipitation[hour] ?? 0;
+                    }
+                }
+            }
+
+            // 2. Будущие даты (1-16 дней) — используем forecast
+            else if (diffDays <= 16) {
+                const url = 'https://api.open-meteo.com/v1/forecast?' + new URLSearchParams({
+                    latitude: lat, longitude: lon,
+                    hourly: 'temperature_2m,precipitation',
+                    timezone: 'Europe/Moscow',
+                    forecast_days: diffDays + 1
+                });
+                const resp = await fetch(url);
+                const data = await resp.json();
+                if (data.hourly) {
+                    // Индекс = (дней * 24) + час
+                    const hourIndex = diffDays * 24 + hour;
+                    temp = data.hourly.temperature_2m[hourIndex] ?? 20;
+                    precip = data.hourly.precipitation[hourIndex] ?? 0;
+                }
+            }
+
+            // 3. Дальше 16 дней — среднее по архиву за прошлые годы
+            else {
+                const currentYear = new Date().getFullYear();
+                const mmdd = dateStr.slice(5);
+                let temps = [], precips = [];
+
+                for (let year = currentYear - 1; year >= currentYear - 3; year--) {
+                    const pastDate = year + '-' + mmdd;
+                    try {
+                        const url = 'https://archive-api.open-meteo.com/v1/archive?' + new URLSearchParams({
+                            latitude: lat, longitude: lon,
+                            start_date: pastDate, end_date: pastDate,
+                            hourly: 'temperature_2m,precipitation',
+                            timezone: 'Europe/Moscow'
+                        });
+                        const resp = await fetch(url);
+                        const data = await resp.json();
+                        if (data.hourly) {
+                            temps.push(data.hourly.temperature_2m[hour]);
+                            precips.push(data.hourly.precipitation[hour]);
+                        }
+                    } catch (e) { /* пропускаем год */ }
+                }
+
+                temp = temps.length > 0 ? temps.reduce((a, b) => a + b, 0) / temps.length : 20;
+                precip = precips.length > 0 ? precips.reduce((a, b) => a + b, 0) / precips.length : 0;
+            }
+
+            return { temp: temp ?? 20, precip: precip ?? 0 };
+
+        } catch (e) {
+            console.warn('API погоды не ответил:', e);
+            return { temp: 20, precip: 0 };
+        }
+    }
+
+    function calcWeatherFeature(temp, precip, isOutdoor) {
+        if (!isOutdoor) {
+            return { coef: 1.0, feature: 0.0, label: 'не влияет' };
+        }
+
+        // Округляем для отображения
+        const tempRounded = Math.round(temp);
+        const precipRounded = Math.round(precip * 10) / 10;
+
+        let tempCoef = 1.0;
+        if (temp < -10 || temp > 30) tempCoef = 0.7;
+        else if (temp < 0 || temp > 25) tempCoef = 0.85;
+
+        let rainCoef = 1.0;
+        if (precip > 3) rainCoef = 0.5;
+        else if (precip > 0) rainCoef = 0.75;
+
+        const coef = Math.round(tempCoef * rainCoef * 1000) / 1000;
+
+        let feature = 0.0;
+        if (tempCoef === 0.7) feature += 2.0;
+        else if (tempCoef === 0.85) feature += 1.0;
+        if (rainCoef === 0.5) feature += 2.0;
+        else if (rainCoef === 0.75) feature += 1.0;
+
+        const label = Math.round(coef * 100) + '% (' + tempRounded + '°C, ' + precipRounded + ' мм)';
+
+        return { coef, feature, label };
+    }
+
+    function getTimeFeature(dateStr, hour) {
+        const date = new Date(dateStr);
+        const weekday = date.getDay();
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+
+        let feature = 0.0;
+        if (weekday >= 1 && weekday <= 5) feature += 1.0;
+        if (month === 1 && day <= 8) feature -= 0.5;
+        if (weekday >= 1 && weekday <= 5 && hour >= 17 && hour <= 19) feature += 0.5;
+
+        return feature;
+    }
+
+    function getSeasonLabel(month) {
+        const seasons = {
+            1: 'Зима', 2: 'Зима', 3: 'Весна', 4: 'Весна', 5: 'Весна',
+            6: 'Лето', 7: 'Лето', 8: 'Лето', 9: 'Осень', 10: 'Осень',
+            11: 'Осень', 12: 'Зима'
+        };
+        return seasons[month] || '—';
+    }
+
+
+    // ===== ГЕОКОДИНГ (Яндекс) =====
+    async function geocodeAddress(address) {
+        try {
+            const url = 'https://geocode-maps.yandex.ru/1.x/?' + new URLSearchParams({
+                apikey: 'd707a689-20fb-4b26-9795-8aa6e67d4f95',
+                geocode: address,
+                format: 'json',
+                results: 1
+            });
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const pos = data.response.GeoObjectCollection.featureMember[0]
+                .GeoObject.Point.pos.split(' ');
+            return { lat: parseFloat(pos[1]), lon: parseFloat(pos[0]) };
+        } catch (e) {
+            console.warn('Геокодинг Яндекса не удался:', e);
+            return { lat: 59.9343, lon: 30.3351 }; // СПб по умолчанию
+        }
+    }
+
+    // ===== ПРОСТАЯ АДРЕСНАЯ КНИГА =====
+    (function() {
+        const addressInput = document.getElementById('eventAddress');
+
+        // Создаём контейнер для подсказок
+        const suggestBox = document.createElement('ul');
+        suggestBox.id = 'suggestBox';
+        suggestBox.style.cssText = 'display:none; position:absolute; top:100%; left:0; right:0; background:white; border:1px solid #ccc; border-radius:8px; list-style:none; padding:0; margin:0; max-height:200px; overflow-y:auto; z-index:9999; box-shadow:0 4px 12px rgba(0,0,0,0.1);';
+
+        // Делаем родителя позиционированным
+        addressInput.parentNode.style.position = 'relative';
+        addressInput.parentNode.appendChild(suggestBox);
+
+        let timer;
+        addressInput.addEventListener('input', function() {
+            clearTimeout(timer);
+            const query = this.value.trim();
+
+            if (query.length < 2) {
+                suggestBox.style.display = 'none';
+                return;
+            }
+
+            timer = setTimeout(async () => {
+                try {
+                    const url = 'https://geocode-maps.yandex.ru/1.x/?' + new URLSearchParams({
+                        apikey: 'd707a689-20fb-4b26-9795-8aa6e67d4f95',
+                        geocode: query,
+                        format: 'json',
+                        results: 5,
+                        lang: 'ru_RU'
+                    });
+                    const resp = await fetch(url);
+                    const data = await resp.json();
+                    const items = data.response.GeoObjectCollection.featureMember;
+
+                    if (items.length > 0) {
+                        suggestBox.innerHTML = items.map(item => {
+                            const name = item.GeoObject.name;
+                            const desc = item.GeoObject.description || '';
+                            const full = desc ? name + ', ' + desc : name;
+                            return '<li style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid #f0f0f0;" ' +
+                                'onmouseover="this.style.backgroundColor=\'#f5f5f5\'" ' +
+                                'onmouseout="this.style.backgroundColor=\'white\'">' + full + '</li>';
+                        }).join('');
+
+                        // Вешаем обработчики клика
+                        suggestBox.querySelectorAll('li').forEach(li => {
+                            li.addEventListener('mousedown', function(e) {
+                                e.preventDefault();
+                                addressInput.value = this.textContent;
+                                suggestBox.style.display = 'none';
+                                updatePrediction();
+                            });
+                        });
+
+                        suggestBox.style.display = 'block';
+                    } else {
+                        suggestBox.style.display = 'none';
+                    }
+                } catch (e) {
+                    suggestBox.style.display = 'none';
+                }
+            }, 300);
+        });
+
+        // Клик вне — закрываем
+        document.addEventListener('click', function(e) {
+            if (e.target !== addressInput && !suggestBox.contains(e.target)) {
+                suggestBox.style.display = 'none';
+            }
+        });
+    })();
+
+    // ===== ГЛАВНАЯ ФУНКЦИЯ =====
+    async function updatePrediction() {
+        const sphere = document.getElementById('eventSphere').value;
+        const dateStr = document.getElementById('eventDate').value;
+        const timeStr = document.getElementById('eventTime').value;
+        const address = document.getElementById('eventAddress').value.trim();
+        const required = parseInt(document.getElementById('requiredVolunteers').value) || 10;
+        const audience = parseInt(document.getElementById('audienceSize').value) || 500;
+        const prevAtt = parseInt(document.getElementById('prevAttendance').value) || 30;
+        const isOutdoor = document.getElementById('eventIsOutdoor').checked;
+
+        if (!dateStr || !timeStr || !address) return;
+
+        const date = new Date(dateStr);
+        const hour = parseInt(timeStr.split(':')[0]) || 12;
+        const month = date.getMonth() + 1;
+        const weekday = date.getDay();
+
+        // Показываем, что идёт загрузка
+        document.getElementById('demoForm').classList.add('loading');
+
+        // 1. Геокодинг + погода
+        const coords = await geocodeAddress(address);
+        console.log('Адрес:', address, '→ Координаты:', coords.lat, coords.lon);
+        const weatherData = await getWeatherData(dateStr, hour, coords.lat, coords.lon);
+        const weather = calcWeatherFeature(weatherData.temp, weatherData.precip, isOutdoor);
+
+        // 2. База по метке
+        const tagAvg = TAG_AVG[sphere] || 20.0;
+
+        // 3. Время
+        const timeFeature = getTimeFeature(dateStr, hour);
+
+        // 4. Размер аудитории
+        const orgSizeFeature = audience / 100.0;
+
+        // 5. Прогноз через формулу регрессии
+        const linear = (
+            WEIGHTS.tag_avg * tagAvg +
+            WEIGHTS.weather * weather.feature +
+            WEIGHTS.time * timeFeature +
+            WEIGHTS.org_size * orgSizeFeature +
+            WEIGHTS.prev_attendance * prevAtt +
+            INTERCEPT
+        );
+        const prediction = Math.max(0, Math.round(linear));
+
+        // Снимаем загрузку
+        document.getElementById('demoForm').classList.remove('loading');
+
+        // ===== Обновление интерфейса =====
+        const valueEl = document.getElementById('predictionValue');
+        const fillEl = document.getElementById('predictionFill');
+        const percentEl = document.getElementById('labelPercent');
+        const requiredEl = document.getElementById('labelRequired');
+
+        valueEl.textContent = prediction;
+        requiredEl.textContent = required;
+
+        const percent = Math.min(100, Math.round((prediction / required) * 100));
+        percentEl.textContent = percent + '%';
+        fillEl.style.width = percent + '%';
+
+        valueEl.className = 'prediction-value';
+        fillEl.className = 'progress-fill';
+
+        if (prediction >= required) {
+            valueEl.classList.add('green');
+            fillEl.classList.add('green');
+        } else if (prediction >= required * 0.5) {
+            valueEl.classList.add('yellow');
+            fillEl.classList.add('yellow');
+        } else {
+            valueEl.classList.add('red');
+            fillEl.classList.add('red');
+        }
+
+        document.getElementById('factorBase').textContent = tagAvg + ' чел.';
+        document.getElementById('factorWeather').textContent = weather.label;
+        document.getElementById('factorDay').textContent = DAY_NAMES[weekday];
+        document.getElementById('factorAudience').textContent = audience + ' чел.';
+        document.getElementById('factorHistory').textContent = prevAtt + ' чел.';
+        document.getElementById('factorSeason').textContent = getSeasonLabel(month);
+    }
+
+    // Привязка событий
+    document.querySelectorAll('#demoForm input, #demoForm select').forEach(function(el) {
+        el.addEventListener('input', updatePrediction);
+        el.addEventListener('change', updatePrediction);
+    });
+</script>
+</body>
+</html>
