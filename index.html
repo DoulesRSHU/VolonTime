@@ -556,11 +556,21 @@
         });
     })();
 
+    function isNightTime(timeStr) {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const totalMinutes = hours * 60 + minutes;
+    const nightStart = 22 * 60; // 22:00
+    const nightEnd   =  6 * 60; //  06:00
+    // Ночь переходит через полночь, поэтому два условия
+    return totalMinutes >= nightStart || totalMinutes < nightEnd;
+}
+
     // ===== ГЛАВНАЯ ФУНКЦИЯ =====
     async function updatePrediction() {
         const sphere = document.getElementById('eventSphere').value;
         const dateStr = document.getElementById('eventDate').value;
         const timeStr = document.getElementById('eventTime').value;
+        console.log(timeStr);
         const address = document.getElementById('eventAddress').value.trim();
         const required = parseInt(document.getElementById('requiredVolunteers').value) || 10;
         const audience = parseInt(document.getElementById('audienceSize').value) || 500;
@@ -568,6 +578,25 @@
         const isOutdoor = document.getElementById('eventIsOutdoor').checked;
 
         if (!dateStr || !timeStr || !address) return;
+        
+
+        if (isNightTime(timeStr)) {
+            document.getElementById('eventTime').value = '';
+            // Показываем предупреждение (убирается при следующем корректном вводе)
+            let warning = document.getElementById('nightTimeWarning');
+            if (!warning) {
+                warning = document.createElement('div');
+                warning.id = 'nightTimeWarning';
+                warning.style.cssText = 'color:#c0392b; font-size:0.85rem; margin-top:4px;';
+                document.getElementById('eventTime').insertAdjacentElement('afterend', warning);
+            }
+            warning.textContent = '⛔ Ночное время (22:00 – 06:00) недоступно для мероприятий';
+            return; // прерываем updatePrediction()
+        } else {
+            // Убираем предупреждение, если время стало корректным
+            const warning = document.getElementById('nightTimeWarning');
+            if (warning) warning.textContent = '';
+        }
 
         const date = new Date(dateStr);
         const hour = parseInt(timeStr.split(':')[0]) || 12;
